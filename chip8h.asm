@@ -1,9 +1,4 @@
-
-;; RAM locations
-altlcd		equ	0fcc0h
-
-;; Variables used by the program itself
-vm_mem_start	equ	0ff46h	; Start of VM memory
+		include	"constants.asm"
 
 		org	altlcd			; Non-relocatable part that runs from ALTLCD.
 
