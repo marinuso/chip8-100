@@ -1,6 +1,6 @@
 		include	"constants.asm"
 
-		org	orgbase		
+		org	origin		
 		
 		;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		;;;;;; Self-relocator
@@ -9,7 +9,7 @@
 start		lxi	h,0e9e1h	; POP H / PCHL 
 		shld	getPC
 		call	getPC	
-		lxi	b,$ - start - orgbase
+		lxi	b,$ - start - origin
 		db	dsub
 		shld	rlc_offset	; Offset to add to relocated addresses
 		push	h
@@ -158,6 +158,14 @@ font_load_loop	ldax	d 		; Get current input byte
 		dw	relocate
 		jnz	font_load_loop	; If not, next byte
 
+		;;;; Calculate and store 'jmp cls' in a known address
+		lxi	h,r_cls
+		mvi	m,0c3h		; jmp
+		inx	h
+		dw	relocate
+		lxi	d,cls
+		xchg
+		db	shlx
 		
 		;;;; Copy the code that's supposed to run from ALTLCD/LCD into that area
 		; (Some of it needs to be in a certain page for the jump tables to work,
@@ -219,6 +227,31 @@ hex_byte        call    hex_ch_next
                 ora     b
                 ret
 
+		;; Clear the screen.
+		;
+		; This routine does not touch (D,E), which is important. 
+cls		di			; Screen updates w/o interrupts
+		xra	a		; Select at least the first 8 drivers
+		cma			; (the other 2 are unused and unimportant)
+		out	0b9h		
+		mvi	b,3		; Four banks
+clear_bank	mov	a,b		; Select bank
+		rrc
+		rrc
+		out	0feh
+		mvi	c,50 		; 50 bytes per bank
+		xra	a		; Zero A.
+clear_byte	call	drvwait		; Wait for drivers to be ready
+		out	0ffh		; Send a zero
+		dcr	c		; Bank done yet?
+		dw	relocate
+		jnz	clear_byte	
+		dcr	b		; Driver done yet?
+		dw	relocate
+		jp	clear_bank
+		ei
+		ret
+		
 		
 font            ;; Packed font data. 
 		;; Each group of five nybbles is a hexdigit, in VM memory they should occupy five bytes each
