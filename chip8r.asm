@@ -297,7 +297,7 @@ drawsprite 	xra	a		; Clear VF (drawbyte will set it if it needs to)
 		ani	63	
 		mov	d,a
 		mov	a,e
-		ani	15
+		ani	31
 		mov	e,a
 		
 		in	0bah		; Deselect the last 2 drivers 
