@@ -25,7 +25,7 @@ df.close()
 lineno=7
 
 while data:
-   line, data = data[:16], data[16:]
+   line, data = data[:32], data[32:]
    basic += ('%d DATA '%lineno) + ','.join(str(x) for x in line) + '\r\n'
    lineno += 1
 

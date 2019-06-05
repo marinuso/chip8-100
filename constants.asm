@@ -25,7 +25,7 @@ drvwait         equ     7548h   ; wait for selected LCD driver to be ready
 lcdread         equ     74f5h   ; read LCD memory
 lcdwrite        equ     74f6h   ; write LCD memory
 scan_key        equ     7242h	; Scan the keyboard
-
+random		equ	313eh	; BASIC's RND function 
 
 
 ;; RAM locations
@@ -33,6 +33,9 @@ kbuf		equ	0f685h	; line input buffer
 altlcd		equ	0fcc0h	
 strend		equ	0fbb6h	; start of free memory
 lcdbuf          equ     0ffech  ; used as temporary storage to read from and write to the LCD
+fac1		equ	0fc1ah	; Output from BASIC's RND function 
+isrvec		equ	0f5ffh	; Timer ISR vector 
+sentinel	equ	0ff3fh	; Location for ISR sentinel (last value in LCD memory)
 
 ;; Variables used by the relocator 
 getPC		equ	0f685h	; location to store the routine that finds the PC
@@ -44,9 +47,19 @@ rlc_end_addr	equ	0f68fh
 
 ;; Jumps to relocated subroutines
 r_cls		equ	0f691h	; a 'jmp cls' is written here
+r_drawsprite	equ	0f694h	; a 'jmp drawsprite' is written here
+
+;; Jump table
+jptbl		equ	0f700h	; 128-byte jump table for 8, E, and F. 
 
 ;; Variables used by the program itself
 vm_mem_start	equ	0ff46h	; Start of VM memory
 
-reg_V		equ	0ff50h	; Regs V0..VF stored here
-reg_VF		equ	0ff5fh
+reg_V		equ	0ff50h	; base location for registers
+reg_VF		equ	0ff5fh	; the VF register 
+counter		equ	0ff60h	; Counter for interrupt routine
+reg_DT		equ	0ff61h	; Delay timer
+reg_ST		equ	0ff62h	; Sound timer
+stackptr	equ	0ff63h	; Stack pointer (8-bit, points into first page of VM memory)
+reg_I		equ	0ff64h	; Memory pointer
+
