@@ -230,7 +230,6 @@ op_B		lxi	h,reg_V		; Set HL = V0
 
 ;; DXYN: DRW Vx, Vy, N - At coords (Vx, Vy), draw N-byte sprite from memory at I 
 op_D		push	d		; We need it for the coordinates
-		call	hl_I
 		call	reg_C		; Y coordinate register 
 		mov	e,a
 		call	reg_B		; X coordinate register 
@@ -238,6 +237,7 @@ op_D		push	d		; We need it for the coordinates
 		mov	a,c		; Number of bytes
 		ani	0fh
 		mov	b,a
+		call	hl_I
 		call	r_drawsprite
 pop_d_ret	pop	d
 		ret 
