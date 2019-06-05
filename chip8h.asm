@@ -430,8 +430,8 @@ cycle		lxi	h,cycle		; Push the address onto the stack, so the opcode
 		push	h		; routine can RET
 		
 		db	lhlx		; Retrieve 2-byte instruction 
-		mov	b,h		; Store in BC
-		mov	c,l 
+		mov	b,l		; Store in BC. Low/high swap is on purpose, Chip-8 is high-endian
+		mov	c,h 
 		inx	d		; Point to next instruction  
 		inx	d
 		
