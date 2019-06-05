@@ -307,6 +307,7 @@ drawsprite 	xra	a		; Clear VF (drawbyte will set it if it needs to)
 draw_loop	push 	b
 		push	d
 		push 	h
+		dw	relocate
 		call	drawbyte
 		pop	h
 		pop	d
