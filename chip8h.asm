@@ -252,11 +252,11 @@ op_E		call	reg_B		; Retrieve Vx
 		jz	op_E_skp
 		; Skip if not pressed 
 		pop	psw
-		rz
+		rnz
 		db	21h		; lxi h,_ to skip 'pop psw/rnz'
 		; Skip if pressed
 op_E_skp	pop	psw
-		rnz
+		rz
 		inx	d
 		inx	d
 		ret 
@@ -351,6 +351,7 @@ fnf_ld_Vx_DT	lda	reg_DT
 		;; Wait for key press, store key press in Vx
 fnf_ld_Vx_K	call	keyscan		; Is key Vx pressed?
 		rz			; If yes, stop.
+		mov	a,m
 		inr	a		; If not, try next key
 		ani	0fh
 		mov	m,a
@@ -491,8 +492,9 @@ keyscan		push	h
 		adi	16		; Output line table is 16 bytes beyond input line table
 		mov	l,a
 		
-		mov	a,m		; Input line table
-		ora	b
+		mov	a,b		; Input line table
+		ora	m
+		cmp	m 
 		pop 	b
 		pop	h
 		ret
@@ -543,11 +545,11 @@ ftblsz		equ	($ - func_tbl) >> 1
 keyin		db	0feh, 0efh, 0efh, 0efh
 		db	0fbh, 0fbh, 0fbh, 0fdh
 		db	0fdh, 0fdh, 0feh, 0feh
-		db	0efh, 0fbh, 0fdh, 0feh
+		db	0efh, 0fbh, 0fdh, 0f7h
 		; Chip-8 nybble -> keyboard output lines 
 keyout		db	0dfh, 0efh, 0dfh, 0bfh
 		db	0efh, 0dfh, 0bfh, 0efh
 		db	0dfh, 0bfh, 0efh, 0bfh
-		db	07fh, 07fh, 07fh, 0f7h
+		db	07fh, 07fh, 07fh, 0dfh
 		
 		
