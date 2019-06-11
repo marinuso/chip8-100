@@ -78,7 +78,7 @@ program		;;; Program follows
 		;
 		db	ldsi,0		; load stack in HL
 		xchg
-		lxi	b,(memsize + 384)	; 128 stack bytes, 256 extra bytes for page alignment
+		lxi	b,(memsize + 512)	; 256 stack bytes, 256 extra bytes for page alignment
 		db	dsub		; subtract VM image size
 		xchg			; DE = minimum start address of VM image
 		lhld	strend		; HL = actual start of free memory
@@ -121,8 +121,10 @@ uppercase	inx	h
 		inr	d
 		
 		lxi	b,memsize - entry_point 	; Max amount of bytes to read
+hex_load_loop	push	b
 		dw	relocate
-hex_load_loop	call	hex_byte	; Read a byte from the hexadecimal file
+		call	hex_byte	; Read a byte from the hexadecimal file
+		pop	b
 		dw	relocate
 		jc	font_load 	; If EOF then done
 		stax	d		; If not, store the byte
@@ -208,6 +210,10 @@ font_load_loop	ldax	d 		; Get current input byte
 		lxi	b,4		; That's probably good enough as a seed.
 		call	memcpy
 		
+		;;;; Zero out the system state (registers, DT, ST, etc.) 
+		lxi	h,reg_V
+		mvi	b,16h
+		call	bzero
 		
 		; Push the ISR address onto the stack and jump to the non-relocatable part
 		dw	relocate
@@ -393,14 +399,14 @@ draw_loop	push 	b
 		;
 		; Destroys all registers, and sets VF if a bit was cleared. 
 		;
-drawbyte	push	h		; we will need it later
-		lxi	b,1980h		; B = driver width in Chip-8 coords, C = driver selector.
-		
-		;; check if E is within bounds
+drawbyte	;; check if E is within bounds
 		mvi	a,31
 		ana	e
 		cmp	e
 		rnz
+
+		push	h		; we will need it later
+		lxi	b,1980h		; B = driver width in Chip-8 coords, C = driver selector.
 		
 drv_sel_loop	;; Select horizontal driver and adjust D to be offset into it
 		mov	a,c

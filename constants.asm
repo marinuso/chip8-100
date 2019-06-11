@@ -19,6 +19,7 @@ memcpy		equ	6bdbh	; copy BC bytes from HL to DC
 srcnam		equ	20afh	; find file whose name is in FILNAM 
 buf_ch_upper	equ	0fe8h	; get character in M, make it uppercase, and store in A
 inlin		equ	463eh	; read line from keyboard and place at kbuf
+bzero		equ	4f0ah	; starting at HL, set B bytes of memory to 0.
 memset		equ	4f0bh	; starting at HL, set B bytes of memory to A
 chkdc		equ	5aa9h	; Find file
 isr_exit	equ	71f7h	; Interrupt exit routine
