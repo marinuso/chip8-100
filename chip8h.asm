@@ -26,14 +26,6 @@ load_jptbl	ldax	d		; Get location of next byte in jump table
 		;;;; Machine initialization
 		call	r_cls		; Clear the screen
 		sta	sentinel	; Zero the sentinel value in LCD RAM (cls ends with A=0)
-		lxi 	h,stackptr	; Zero stack pointer
-		mov	m,a		
-		dcx	h
-		mov	m,a 		; Zero ST
-		dcx	h
-		mov	m,a		; Zero DT
-		dcx	h
-		mvi	m,4		; Set the ISR countdown to 4
 		pop	h		; Register the ISR (take address from stack)
 		lxi	d,isrvec + 1	; ...carefully, address first...
 		db	shlx
@@ -47,7 +39,10 @@ load_jptbl	ldax	d		; Get location of next byte in jump table
 		xchg			; Set DE = entry point
 		
 ;;;;; One machine cycle (VM inner loop) ;;;;;
-cycle		call	check_quit	; Stop if the user wants to
+cycle		mov	h,d
+		mov	l,e
+		shld	0ff48h		; Store IP in memory (for debugging)
+		call	check_quit	; Stop if the user wants to
 		lxi	h,cycle		; Push the address onto the stack, so the opcode 
 		push	h		; routine can RET
 		
@@ -492,7 +487,24 @@ op_tbl		db	low op_0, low op_1, low op_2, low op_3
 		db	low op_4, low op_5, low op_6, low op_7
 		db	low op_8, low op_9, low op_A, low op_B
 		db	low op_C, low op_D, low op_E, low op_F
+		
+		;;;; Keyboard mapping 
+		; 5 6 7 8   ==  1 2 3 C
+		; T Y U I   ==  4 5 6 D
+		; G H J K   ==  7 8 9 E 
+		; B N M ,   ==  A 0 B F 
 
+		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
+keyin		db	0feh, 0efh, 0efh, 0efh
+		db	0fbh, 0fbh, 0fbh, 0fdh
+		db	0fdh, 0fdh, 0feh, 0feh
+		db	0efh, 0fbh, 0fdh, 0f7h
+		; Chip-8 nybble -> keyboard output lines 
+keyout		db	0dfh, 0efh, 0dfh, 0bfh
+		db	0efh, 0dfh, 0bfh, 0efh
+		db	0dfh, 0bfh, 0efh, 0bfh
+		db	07fh, 07fh, 07fh, 0dfh
+		
 		;;;; Function table for 8xyf and Fxff
 		; Fxff all has its functions increased by 1 so they don't conflict.
 		; This table may (probably does) cross a page boundary
@@ -519,20 +531,5 @@ func_tbl	db	00h,low fn8_ld
 		db	1 + 65h, low fnf_ld_Vx_I
 ftblsz		equ	($ - func_tbl) >> 1
 
-		;;;; Keyboard mapping 
-		; 5 6 7 8   ==  1 2 3 C
-		; T Y U I   ==  4 5 6 D
-		; G H J K   ==  7 8 9 E 
-		; B N M ,   ==  A 0 B F 
 
-		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
-keyin		db	0feh, 0efh, 0efh, 0efh
-		db	0fbh, 0fbh, 0fbh, 0fdh
-		db	0fdh, 0fdh, 0feh, 0feh
-		db	0efh, 0fbh, 0fdh, 0f7h
-		; Chip-8 nybble -> keyboard output lines 
-keyout		db	0dfh, 0efh, 0dfh, 0bfh
-		db	0efh, 0dfh, 0bfh, 0efh
-		db	0dfh, 0bfh, 0efh, 0bfh
-		db	07fh, 07fh, 07fh, 0dfh
 		
