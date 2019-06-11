@@ -97,13 +97,13 @@ op_0		mvi	a,0e0h		; cls?
 ;; 2XXX: CALL XXX
 op_2		; Push current PC on stack (it has already been incremented) 
 		xchg
-		lda	stackptr
-		mov	e,a
 		lda	vm_mem_start + 1
 		mov	d,a
+		lda	stackptr
+		mov	e,a
 		db	shlx
-		inr	e		
-		inr	e		
+		inr	a		
+		inr	a		
 		sta	stackptr
 		; Fall through into JMP 
 		
