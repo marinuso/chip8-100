@@ -247,7 +247,7 @@ isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		lxi	h,counter		; VM countdown (we need to run only every 4 cycles, 256/4=64 hz)
 		dcr	m
 		rnz		
-		mvi	m,4			; Reset counter
+		mvi	m,3			; Reset counter
 		mvi	a,7Fh			; Check the keyboard for function keys
 		out	0B9h
 		in	0E8h
