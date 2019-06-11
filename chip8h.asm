@@ -2,52 +2,7 @@
 
 		org	altlcd			; Non-relocatable part that runs from ALTLCD.
 
-		jmp	start
-		
-		;;;; Interrupt routine (this place in ALTLCD is safe) 
-isr		push	psw			; Save all registers
-		push	b
-		push	d
-		push	h
-		;; Check if the program is still in memory and deregister if not
-		;; (the program itself does not use the LCD routines in ROM; the lowermost 
-		;; LCD RAM location is set to 0 (a value it will never have) to indicate no 
-		;; other program has touched it yet. Any CLS (such as on "Menu" or reset)
-		;; will overwrite it with a nonzero value. 
-		lda	sentinel
-		ana	a
-		jz	isr_run
-		;; The LCD RAM has been touched - deregister myself and stop
-		mvi	a,0c9h			; RET
-		sta	isrvec
-isrdone		pop	h			; Restore all registers
-		pop	d
-		pop	b
-		pop	psw
-		ret
-		
-isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
-		push	h
-		lxi	h,counter		; Countdown (we need to run only every 4 cycles)
-		dcr	m
-		rnz		
-		mvi	m,4			; Reset counter
-		inr	l			; Look at delay timer
-		xra	a
-		ora	m			
-		jz	isr_st			; If nonzero, decrease by 1
-		dcr	m 
-isr_st		inr	l			; Look at sound timer
-		xra	a
-		ora	m
-		jz	isr_snd_off
-		dcr	m
-		ret
-isr_snd_off	in	0bah			; If sound timer 0, turn off the speaker
-		ori	4
-		out 	0bah
-		ret
-		
+		;;;; Note: the ISR address is passed on the stack!
 		
 		;;;; Set up the jump table in memory
 		; Set every entry in the table to point to a 'ret'
@@ -79,7 +34,7 @@ load_jptbl	ldax	d		; Get location of next byte in jump table
 		mov	m,a		; Zero DT
 		dcx	h
 		mvi	m,4		; Set the ISR countdown to 4
-		lxi	h,isr		; Register the ISR 
+		pop	h		; Register the ISR (take address from stack)
 		lxi	d,isrvec + 1	; ...carefully, address first...
 		db	shlx
 		dcx	d
@@ -91,9 +46,28 @@ load_jptbl	ldax	d		; Get location of next byte in jump table
 		inr	h
 		xchg			; Set DE = entry point
 		
-		; The machine cycle loop is located further on in RAM, so that all opcode routines 
-		; are in FDxx, so we only need 1-byte values in the lookup table.
-		jmp 	cycle		
+;;;;; One machine cycle (VM inner loop) ;;;;;
+cycle		lxi	h,cycle		; Push the address onto the stack, so the opcode 
+		push	h		; routine can RET
+		
+		db	lhlx		; Retrieve 2-byte instruction 
+		mov	b,l		; Store in BC. Low/high swap is on purpose, Chip-8 is high-endian
+		mov	c,h 
+		inx	d		; Point to next instruction  
+		inx	d
+		
+		mov	a,b		; Get high nybble of first byte of instruction (opcode)
+		rlc 
+		rlc 
+		rlc 
+		rlc
+		ani 	0fh
+		mvi	h,high op_tbl	; Look up the entry point in the table
+		adi	low op_tbl
+		mov	l,a
+		mov	l,m
+		mvi	h,high op_0
+		pchl	
 		
 ;;;;; Opcode routines ;;;;;
 ; Input: BC = 16-bit instruction; DE = address of next instruction 
@@ -306,6 +280,55 @@ nextbyte	rlc
 		mov	m,c
 		ret
 		
+;;;;; Subroutines ;;;;;
+
+		;;;; Get register in upper C
+reg_C		mov	a,c
+		rrc
+		rrc
+		rrc
+		rrc
+		db	26h		; mvi h,_ : to skip mov a,b below
+		;;;; Get register in lower B
+reg_B		mov 	a,b
+		ani	0fh
+		ori	low reg_V
+		mov	l,a
+		mvi	h,high reg_V
+		mov	a,m
+		ret 
+		;;;; Set HL = [I]
+hl_I		lda	vm_mem_start + 1
+		lhld	reg_I
+		add	h
+		mov	h,a
+		ret
+		
+		;;;; Scan the keyboard
+		; Input: A = hex value of key to test
+		; Output: zero flag set if key down, reset if key up 	
+keyscan		push	h
+		push	b
+		lxi	h,keyin		; Keyboard input line table
+		add	l
+		mov	l,a		; Index Vx into keyboard input line table 
+		mov	a,m
+		di
+		out	0b9h		; Set keyboard output lines
+		in	0e8h		; Read keyboard input lines
+		ei 
+		mov	b,a		; Store keyboard input in B
+		mov	a,l
+		adi	16		; Output line table is 16 bytes beyond input line table
+		mov	l,a
+		
+		mov	a,b		; Input line table
+		ora	m
+		cmp	m 
+		pop 	b
+		pop	h
+		ret
+		
 ;;;;;; Functions ;;;;;;
 ; These must all be in FExx 
 
@@ -426,78 +449,6 @@ fnf_ld_Vx_I	xra	a		; ld_Vx_I: use a NOP
 ldivx_nop_xchg	xchg			; with XCHG, copy Vx->[I]; with NOP, [I]->Vx; this is rewritten
 		jmp	memcpy		; copy from HL to DE for BC byte
 		
-;;;;; One machine cycle (VM inner loop) ;;;;;
-cycle		lxi	h,cycle		; Push the address onto the stack, so the opcode 
-		push	h		; routine can RET
-		
-		db	lhlx		; Retrieve 2-byte instruction 
-		mov	b,l		; Store in BC. Low/high swap is on purpose, Chip-8 is high-endian
-		mov	c,h 
-		inx	d		; Point to next instruction  
-		inx	d
-		
-		mov	a,b		; Get high nybble of first byte of instruction (opcode)
-		rlc 
-		rlc 
-		rlc 
-		rlc
-		ani 	0fh
-		mvi	h,high op_tbl	; Look up the entry point in the table
-		adi	low op_tbl
-		mov	l,a
-		mov	l,m
-		mvi	h,high op_0
-		pchl
-		
-		
-;;;;; Subroutines ;;;;;
-
-		;;;; Get register in upper C
-reg_C		mov	a,c
-		rrc
-		rrc
-		rrc
-		rrc
-		db	26h		; mvi h,_ : to skip mov a,b below
-		;;;; Get register in lower B
-reg_B		mov 	a,b
-		ani	0fh
-		ori	low reg_V
-		mov	l,a
-		mvi	h,high reg_V
-		mov	a,m
-		ret 
-		;;;; Set HL = [I]
-hl_I		lda	vm_mem_start + 1
-		lhld	reg_I
-		add	h
-		mov	h,a
-		ret
-		
-		;;;; Scan the keyboard
-		; Input: A = hex value of key to test
-		; Output: zero flag set if key down, reset if key up 	
-keyscan		push	h
-		push	b
-		lxi	h,keyin		; Keyboard input line table
-		add	l
-		mov	l,a		; Index Vx into keyboard input line table 
-		mov	a,m
-		di
-		out	0b9h		; Set keyboard output lines
-		in	0e8h		; Read keyboard input lines
-		ei 
-		mov	b,a		; Store keyboard input in B
-		mov	a,l
-		adi	16		; Output line table is 16 bytes beyond input line table
-		mov	l,a
-		
-		mov	a,b		; Input line table
-		ora	m
-		cmp	m 
-		pop 	b
-		pop	h
-		ret
 
 
 ;;;;;; Control data ;;;;;;

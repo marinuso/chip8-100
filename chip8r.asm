@@ -192,19 +192,71 @@ font_load_loop	ldax	d 		; Get current input byte
 		ei
 		
 		;;;; Copy the code that's supposed to run from ALTLCD/LCD into that area
-		; (Some of it needs to be in a certain page for the jump tables to work,
+		; Some of it needs to be in a certain page for the jump tables to work,
 		; and this is a lot easier than calculating jump tables on the fly,and also
-		; doesn't require the binary itself to be loaded at a certain address.)
+		; doesn't require the binary itself to be loaded at a certain address.
 		dw	relocate
 		lxi	h,vm_code	; the code is at the very end of the binary
 		lxi	d,altlcd	; copy it into memory starting at ALTLCD
 		lxi	b,640		; max. 640 bytes
 		call	memcpy
 		
+		; Push the ISR address onto the stack and jump to the non-relocatable part
+		dw	relocate
+		lxi	h,isr
+		push	h
 		jmp	altlcd
 		
 		;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		;;;; Subroutines in relocatable area
+		
+		;;;; Interrupt routine (will end up in HIMEM protected area while the program runs) 
+isr		push	psw			; Save all registers
+		push	b
+		push	d
+		push	h
+		;; Check if the program is still in memory and deregister if not
+		;; (the program itself does not use the LCD routines in ROM; the lowermost 
+		;; LCD RAM location is set to 0 (a value it will never have) to indicate no 
+		;; other program has touched it yet. Any CLS (such as on "Menu" or reset)
+		;; will overwrite it with a nonzero value. 
+		lda	sentinel
+		ana	a
+		dw	relocate
+		jz	isr_run
+		;; The LCD RAM has been touched - deregister myself and stop
+		mvi	a,0c9h			; RET
+		sta	isrvec
+isrdone		pop	h			; Restore all registers
+		pop	d
+		pop	b
+		pop	psw
+		ret
+		
+		dw	relocate
+isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
+		push	h
+		lxi	h,counter		; Countdown (we need to run only every 4 cycles)
+		dcr	m
+		rnz		
+		mvi	m,4			; Reset counter
+		inr	l			; Look at delay timer
+		xra	a
+		ora	m		
+		dw	relocate
+		jz	isr_st			; If nonzero, decrease by 1
+		dcr	m 
+isr_st		inr	l			; Look at sound timer
+		xra	a
+		ora	m
+		dw	relocate
+		jz	isr_snd_off
+		dcr	m
+		ret
+isr_snd_off	in	0bah			; If sound timer 0, turn off the speaker
+		ori	4
+		out 	0bah
+		ret
 		
 hex_char        ;; Get hexadecimal character under the HL pointer.
                 ;; A will be set to the hex value. Carry flag will be set if invalid.
