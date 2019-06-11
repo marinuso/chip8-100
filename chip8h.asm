@@ -264,18 +264,29 @@ op_F		push	d
 		jmp	reg_B
 	
 ;; Cxkk = generate a random number, AND it with KK, and store it in Vx 	
-op_C		push	b
-		push	d
-		call	random		; BASIC's RND function
-		mvi	d,8
-		lxi	h,fac1		; XOR together a bunch of the data
-nextbyte	rlc
-		xra	m		
-		dcr	d
-		jnz 	nextbyte
-		pop	d
-		pop	b
-		ana	c		; AND it with KK
+;; The algorithm used here is is (almost) the "X ABC" algorithm described on:
+;; https://www.electro-tech-online.com/threads/ultra-fast-pseudorandom-number-generator-for-8-bit.124249/
+;; "Beter goed gestolen dan slecht bedacht" 
+;; The 4 bytes of state are stored starting at rnddat in the order "X C A B". 
+op_C		lxi	h,rnddat
+		inr	m 	; X++
+		mov	a,m	; X,
+		inx	h       ;
+		xra	m       ; ^ C,
+                inx	h	;
+		xra	m	; ^ A,
+		mov	m,a	; -> A
+		inx	h
+		add	m	; + B,
+		mov	m,a	; -> B
+		rar		; >>1 (close enough here, it's not crypto, besides, 'stc cmc' _removes_ randomness right?) 
+		dcx	h
+		xra	m	; ^ A,
+		dcx	h
+		add	m	; + C
+		mov	m,a	; -> C
+		
+		ana	c	; AND the result with KK
 		mov	c,a
 		call	reg_B
 		mov	m,c

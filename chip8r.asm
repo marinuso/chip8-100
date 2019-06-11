@@ -202,6 +202,13 @@ font_load_loop	ldax	d 		; Get current input byte
 		call	memcpy
 		sta	quit		; Set 'quit' to 0. (memcpy ends with a=0)
 		
+		;;;; Initialize the random number generator
+		lxi	h,timer 	; There are, at this location, subsequently in memory:
+		lxi	d,rnddat	; two timer bytes, the power down counter, and the seconds
+		lxi	b,4		; That's probably good enough as a seed.
+		call	memcpy
+		
+		
 		; Push the ISR address onto the stack and jump to the non-relocatable part
 		dw	relocate
 		lxi	h,isr
