@@ -244,7 +244,7 @@ isrdone		pop	psw			; Restore all registers
 		dw	relocate
 isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		push	h
-		lxi	h,counter		; Countdown (we need to run only every 4 cycles)
+		lxi	h,counter		; VM countdown (we need to run only every 4 cycles, 256/4=64 hz)
 		dcr	m
 		rnz		
 		mvi	m,4			; Reset counter

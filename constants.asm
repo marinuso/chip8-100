@@ -5,6 +5,7 @@ shlx		equ 	0d9h	; (DE) = HL
 dsub		equ	8h	; HL -= BC
 
 ;; Constants
+;key_delay_wait	equ	255	; Wait 64/256th of a second before repeating a key press.
 maxram 		equ	0f5f4h	; Maximum memory
 origin		equ	8000h	
 relocate	equ	7676h	; Relocation marker
@@ -38,6 +39,7 @@ isrvec		equ	0f5ffh	; Timer ISR vector
 sentinel	equ	0ff3fh	; Location for ISR sentinel (last value in LCD memory)
 type_buf_len	equ	0ffaah	; Amount of characters in the typeahead buffer
 timer		equ	0f92fh	; Timer (to seed RNG with)
+keydown		equ	0ff90h	; This location in memory holds 2 iff a key is held down. 
 
 ;; Variables used by the relocator 
 getPC		equ	0f685h	; location to store the routine that finds the PC
@@ -56,7 +58,7 @@ jptbl		equ	0f700h	; 128-byte jump table for 8 and F.
 
 ;; Variables used by the program itself
 vm_mem_start	equ	0ff46h	; Start of VM memory
-
+;key_delay	equ	0ff48h	; Key delay timer for waiting for a keypress
 reg_V		equ	0ff50h	; base location for registers
 reg_VF		equ	0ff5fh	; the VF register 
 counter		equ	0ff60h	; Counter for interrupt routine

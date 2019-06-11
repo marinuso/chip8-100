@@ -350,6 +350,13 @@ keyscan		push	h
 		pop	h
 		ret
 		
+		;;;; Wait until no key is held down.
+wait_no_key	call	check_quit	; Respond to F8 in this loop. 
+		lda	keydown		; Wait until FF90h is not 2 (key released)
+		cpi	2
+		jz	wait_no_key
+		ret
+		
 ;;;;;; Functions ;;;;;;
 ; These must all be in FExx 
 
@@ -393,14 +400,16 @@ fnf_ld_Vx_DT	lda	reg_DT
 		ret
 
 		;; Wait for key press, store key press in Vx
-fnf_ld_Vx_K	call	keyscan		; Is key Vx pressed?
-		rz			; If yes, stop.
+fnf_ld_Vx_K	call	wait_no_key	; Wait until keyboard is free. 
 		call	check_quit	; Respond to F8 in this loop so the user can always quit
-		mov	a,m
-		inr	a		; If not, try next key
+		mov	a,m		; Use current Vx as "counter" 
+		inr	a		; Select next key
 		ani	0fh
 		mov	m,a
-		jmp	fnf_ld_Vx_K
+		call	keyscan		; Is key Vx pressed?
+		jnz	fnf_ld_Vx_K	; If not, try next key
+		jmp	wait_no_key	; Afterwards, again wait for the user to let go.
+
 		
 fnf_ld_DT_Vx	sta	reg_DT		; Store delay timer
 		ret
