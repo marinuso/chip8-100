@@ -473,7 +473,10 @@ fnf_ld_I_Vx	mvi	a,0ebh		; ld_I_Vx; use an XCHG
 		db	6		; 6 = mvi b,_ = skip the 'xra a'. 
 fnf_ld_Vx_I	xra	a		; ld_Vx_I: use a NOP
 		sta	ldivx_nop_xchg
-		mov	c,m		; BC = Vx
+		mov	a,l		; BC = x (of Vx)
+		ani	0fh
+		inr	a		; 0..x inclusive 
+		mov	c,a
 		mvi	b,0
 		lxi	d,reg_V		; DE = *V0
 		call	hl_I		; HL = [I]
@@ -489,23 +492,6 @@ op_tbl		db	low op_0, low op_1, low op_2, low op_3
 		db	low op_4, low op_5, low op_6, low op_7
 		db	low op_8, low op_9, low op_A, low op_B
 		db	low op_C, low op_D, low op_E, low op_F
-
-		;;;; Keyboard mapping 
-		; 5 6 7 8   ==  1 2 3 C
-		; T Y U I   ==  4 5 6 D
-		; G H J K   ==  7 8 9 E 
-		; B N M ,   ==  A 0 B F 
-
-		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
-keyin		db	0feh, 0efh, 0efh, 0efh
-		db	0fbh, 0fbh, 0fbh, 0fdh
-		db	0fdh, 0fdh, 0feh, 0feh
-		db	0efh, 0fbh, 0fdh, 0f7h
-		; Chip-8 nybble -> keyboard output lines 
-keyout		db	0dfh, 0efh, 0dfh, 0bfh
-		db	0efh, 0dfh, 0bfh, 0efh
-		db	0dfh, 0bfh, 0efh, 0bfh
-		db	07fh, 07fh, 07fh, 0dfh
 
 		;;;; Function table for 8xyf and Fxff
 		; Fxff all has its functions increased by 1 so they don't conflict.
@@ -533,7 +519,20 @@ func_tbl	db	00h,low fn8_ld
 		db	1 + 65h, low fnf_ld_Vx_I
 ftblsz		equ	($ - func_tbl) >> 1
 
-	
+		;;;; Keyboard mapping 
+		; 5 6 7 8   ==  1 2 3 C
+		; T Y U I   ==  4 5 6 D
+		; G H J K   ==  7 8 9 E 
+		; B N M ,   ==  A 0 B F 
 
-		
+		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
+keyin		db	0feh, 0efh, 0efh, 0efh
+		db	0fbh, 0fbh, 0fbh, 0fdh
+		db	0fdh, 0fdh, 0feh, 0feh
+		db	0efh, 0fbh, 0fdh, 0f7h
+		; Chip-8 nybble -> keyboard output lines 
+keyout		db	0dfh, 0efh, 0dfh, 0bfh
+		db	0efh, 0dfh, 0bfh, 0efh
+		db	0dfh, 0bfh, 0efh, 0bfh
+		db	07fh, 07fh, 07fh, 0dfh
 		
