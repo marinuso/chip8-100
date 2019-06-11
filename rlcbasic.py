@@ -7,7 +7,7 @@ basic+='3 V%%=HIMEM-65536:R%%=VARPTR(V%%):POKE-184,PEEK(R%%):POKE-183,PEEK(R%%+1
 basic+='4 ND=HIMEM+SZ-1:PRINTO$"Loading...":L%%=LC-65536:FORI%%=1TOLS%%:PRINTO$I%%"/"LS%%;:READA$:FORA%%=1TOLEN(A$)STEP2\r\n'
 basic+='5 B%%=16*INSTR(J$,MID$(A$,A%%,1))+INSTR(J$,MID$(A$,A%%+1,1))-17:POKEL%%,B%%:L%%=L%%+1:CH%%=(CH%%+B%%)MOD256:NEXT:NEXT\r\n'
 basic+='6 IFCH%%<>CS%%THENBEEP:PRINTO$"Checksum error.":V=PEEK(-184)+256*PEEK(-183):CLEAR128,V:ENDELSESAVEMN$,LC,ND,LC\r\n'
-basic+='7 SZ=%d:CS%%=%d:N$="%s":O$=CHR$(27)+"M":J$="ABCDEFGHIJKLMNOP":LS%%=%d:RETURN\r\n'
+basic+='7 SZ=%d:CS%%=%d:N$="%s":O$=CHR$(27)+"M":J$="%s":LS%%=%d:RETURN\r\n'
 
 if len(sys.argv)>1:
     df=open(sys.argv[1],'rb')
@@ -43,7 +43,7 @@ if name[0] in '0123456789': name = "A"+name
 if '.' in name: name = name[:name.index('.')]
 name = name[:6]
 
-basic %= length, chksum, name, ndatalines
+basic %= length, chksum, name, enc, ndatalines
 
 sys.stdout.write(basic)
 
