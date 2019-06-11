@@ -36,6 +36,7 @@ lcdbuf          equ     0ffech  ; used as temporary storage to read from and wri
 fac1		equ	0fc1ah	; Output from BASIC's RND function 
 isrvec		equ	0f5ffh	; Timer ISR vector 
 sentinel	equ	0ff3fh	; Location for ISR sentinel (last value in LCD memory)
+type_buf_len	equ	0ffaah	; Amount of characters in the typeahead buffer
 
 ;; Variables used by the relocator 
 getPC		equ	0f685h	; location to store the routine that finds the PC
@@ -62,4 +63,5 @@ reg_DT		equ	0ff61h	; Delay timer
 reg_ST		equ	0ff62h	; Sound timer
 stackptr	equ	0ff63h	; Stack pointer (8-bit, points into first page of VM memory)
 reg_I		equ	0ff64h	; Memory pointer
+quit		equ	0ff66h	; Will be set to nonzero by the ISR if a function key is pressed.
 

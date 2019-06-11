@@ -200,6 +200,7 @@ font_load_loop	ldax	d 		; Get current input byte
 		lxi	d,altlcd	; copy it into memory starting at ALTLCD
 		lxi	b,640		; max. 640 bytes
 		call	memcpy
+		sta	quit		; Set 'quit' to 0. (memcpy ends with a=0)
 		
 		; Push the ISR address onto the stack and jump to the non-relocatable part
 		dw	relocate
@@ -211,10 +212,10 @@ font_load_loop	ldax	d 		; Get current input byte
 		;;;; Subroutines in relocatable area
 		
 		;;;; Interrupt routine (will end up in HIMEM protected area while the program runs) 
-isr		push	psw			; Save all registers
-		push	b
+isr		push	h
 		push	d
-		push	h
+		push	b
+		push	psw
 		;; Check if the program is still in memory and deregister if not
 		;; (the program itself does not use the LCD routines in ROM; the lowermost 
 		;; LCD RAM location is set to 0 (a value it will never have) to indicate no 
@@ -227,10 +228,10 @@ isr		push	psw			; Save all registers
 		;; The LCD RAM has been touched - deregister myself and stop
 		mvi	a,0c9h			; RET
 		sta	isrvec
-isrdone		pop	h			; Restore all registers
-		pop	d
+isrdone		pop	psw			; Restore all registers
 		pop	b
-		pop	psw
+		pop	d
+		pop	h
 		ret
 		
 		dw	relocate
@@ -240,6 +241,11 @@ isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		dcr	m
 		rnz		
 		mvi	m,4			; Reset counter
+		mvi	a,7Fh			; Check the keyboard for function keys
+		out	0B9h
+		in	0E8h
+		cma				; Is FF if no function key pressed, so 00 will be stored if that's the case.
+		sta	quit		
 		inr	l			; Look at delay timer
 		xra	a
 		ora	m		
