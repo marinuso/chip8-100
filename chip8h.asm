@@ -252,11 +252,11 @@ op_E		call	reg_B		; Retrieve Vx
 		jz	op_E_skp
 		; Skip if not pressed 
 		pop	psw
-		rnz
+		rz
 		db	21h		; lxi h,_ to skip 'pop psw/rnz'
 		; Skip if pressed
 op_E_skp	pop	psw
-		rz
+		rnz
 		inx	d
 		inx	d
 		ret 

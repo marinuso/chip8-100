@@ -50,7 +50,7 @@ r_cls		equ	0f691h	; a 'jmp cls' is written here
 r_drawsprite	equ	0f694h	; a 'jmp drawsprite' is written here
 
 ;; Jump table
-jptbl		equ	0f700h	; 128-byte jump table for 8, E, and F. 
+jptbl		equ	0f700h	; 128-byte jump table for 8 and F. 
 
 ;; Variables used by the program itself
 vm_mem_start	equ	0ff46h	; Start of VM memory
