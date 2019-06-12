@@ -368,8 +368,9 @@ fn8_and		ana	e
 fn8_xor		xra	e
 		ret
 
-fn8_subn	mov	e,a
-		mov	d,e
+fn8_subn	mov	d,e
+		mov	e,a
+		mov	a,d
 fn8_sub		sub	e
 		cmc			; Chip-8 carry flag is opposite of 8085 carry flag here
 		db	16h		; mvi d,_ - to skip the 'add e' below  
