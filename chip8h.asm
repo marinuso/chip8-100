@@ -40,14 +40,19 @@ warm_start	call	r_cls		; Clear the screen
 		xchg			; Set DE = entry point
 		
 ;;;;; One machine cycle (VM inner loop) ;;;;;
-cycle		mov	h,d
-		mov	l,e
-		shld	0ff48h		; Store IP in memory (for debugging)
-		call	check_funkey	; Stop if the user wants to
+cycle		call	check_funkey	; Stop if the user wants to
 		lxi	h,cycle		; Push the address onto the stack, so the opcode 
 		push	h		; routine can RET
 		
-		db	lhlx		; Retrieve 2-byte instruction 
+speed_byte	jmp	fast		; This is rewritten as "lxi h,fast" when slow mode is activated. 
+
+		lxi	h,slow_delay	 
+		xra	a
+		ora	m
+		rz			 
+		dcr	m
+		
+fast		db	lhlx		; Retrieve 2-byte instruction 
 		mov	b,l		; Store in BC. Low/high swap is on purpose, Chip-8 is high-endian
 		mov	c,h 
 		inx	d		; Point to next instruction  
@@ -260,29 +265,8 @@ op_F		push	d
 		jmp	reg_B
 	
 ;; Cxkk = generate a random number, AND it with KK, and store it in Vx 	
-;; The algorithm used here is is (almost) the "X ABC" algorithm described on:
-;; https://www.electro-tech-online.com/threads/ultra-fast-pseudorandom-number-generator-for-8-bit.124249/
-;; "Beter goed gestolen dan slecht bedacht" 
-;; The 4 bytes of state are stored starting at rnddat in the order "X C A B". 
-op_C		lxi	h,rnddat
-		inr	m 	; X++
-		mov	a,m	; X,
-		inx	h       ;
-		xra	m       ; ^ C,
-                inx	h	;
-		xra	m	; ^ A,
-		mov	m,a	; -> A
-		inx	h
-		add	m	; + B,
-		mov	m,a	; -> B
-		rar		; >>1 (close enough here, it's not crypto, besides, 'stc cmc' _removes_ randomness right?) 
-		dcx	h
-		xra	m	; ^ A,
-		dcx	h
-		add	m	; + C
-		mov	m,a	; -> C
-		
-		ana	c	; AND the result with KK
+op_C		call	r_xcab_rnd
+		ana	c		; AND the result with KK
 		mov	c,a
 		call	reg_B
 		mov	m,c
@@ -298,7 +282,16 @@ check_funkey	lda	funkey
 		jz	f8_quit
 		cpi	(0feh + 1)	; F1 = reset VM
 		jz	warm_start
-		ret
+		cpi	(0fdh + 1)	; F2 = toggle slow/fast
+		rnz
+		lda	speed_byte	; This contains a JMP _ (C3h) instruction in fast mode and LXI H,_ (21h) in slow mode.
+		xri	(0c3h ^ 21h)	; Swap which one it is
+		sta	speed_byte
+wait_loop	inr	a		; Wait until the key is let go 
+		rz
+		lda	funkey
+		jmp 	wait_loop 
+		
 f8_quit		xra	a
 		sta	type_buf_len
 		rst	0

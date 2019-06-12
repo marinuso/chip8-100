@@ -5,7 +5,7 @@ shlx		equ 	0d9h	; (DE) = HL
 dsub		equ	8h	; HL -= BC
 
 ;; Constants
-;key_delay_wait	equ	255	; Wait 64/256th of a second before repeating a key press.
+vm_speed	equ	768	; Reduced speed is 768 Hz. 
 maxram 		equ	0f5f4h	; Maximum memory
 origin		equ	8000h	
 relocate	equ	7676h	; Relocation marker
@@ -27,15 +27,12 @@ drvwait         equ     7548h   ; wait for selected LCD driver to be ready
 lcdread         equ     74f5h   ; read LCD memory
 lcdwrite        equ     74f6h   ; write LCD memory
 scan_key        equ     7242h	; Scan the keyboard
-random		equ	313eh	; BASIC's RND function 
-
 
 ;; RAM locations
 kbuf		equ	0f685h	; line input buffer
 altlcd		equ	0fcc0h	
 strend		equ	0fbb6h	; start of free memory
 lcdbuf          equ     0ffech  ; used as temporary storage to read from and write to the LCD
-fac1		equ	0fc1ah	; Output from BASIC's RND function 
 isrvec		equ	0f5ffh	; Timer ISR vector 
 sentinel	equ	0ff3fh	; Location for ISR sentinel (last value in LCD memory)
 type_buf_len	equ	0ffaah	; Amount of characters in the typeahead buffer
@@ -53,13 +50,14 @@ rlc_end_addr	equ	0f68fh
 ;; Jumps to relocated subroutines
 r_cls		equ	0f691h	; a 'jmp cls' is written here
 r_drawsprite	equ	0f694h	; a 'jmp drawsprite' is written here
+r_xcab_rnd	equ	0f697h	; a 'jmp xcab_rnd' is written here
 
 ;; Jump table
 jptbl		equ	0f700h	; 128-byte jump table for 8 and F. 
 
 ;; Variables used by the program itself
 vm_mem_start	equ	0ff46h	; Start of VM memory
-;key_delay	equ	0ff48h	; Key delay timer for waiting for a keypress
+slow_delay	equ	0ff48h	; Delay timer for slow mode
 reg_V		equ	0ff50h	; base location for registers
 reg_VF		equ	0ff5fh	; the VF register 
 counter		equ	0ff60h	; Counter for interrupt routine

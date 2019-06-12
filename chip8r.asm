@@ -178,6 +178,15 @@ font_load_loop	ldax	d 		; Get current input byte
 		xchg
 		db	shlx
 		
+		;;;; Calculate and store 'jmp xcab_rnd' in a known address
+		dw	relocate
+		lxi	d,xcab_rnd
+		lxi	h,r_xcab_rnd
+		mvi	m,0c3h		; jmp
+		inx	h
+		xchg
+		db	shlx
+		
 		;;;; Program the timer to generate a square wave, and set it to output to
 		;;;; the speaker, but leave the speaker off.
 		di
@@ -251,7 +260,9 @@ isrdone		pop	psw			; Restore all registers
 		dw	relocate
 isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		push	h
-		lxi	h,counter		; VM countdown (we need to run only every 4 cycles, 256/4=64 hz)
+		lxi	h,slow_delay		; Give the main thread 2000 opcodes to run per 256hz cycle in slow mode
+		mvi	m,(vm_speed / 256)	; (run VM processor at ~ "vm_speed" Hz) 
+		mvi	l,low counter		; VM countdown (the rest only needs to run only every 4 cycles, 256/4=64 hz)
 		dcr	m
 		rnz		
 		mvi	m,4			; Reset counter
@@ -322,6 +333,29 @@ hex_byte        call    hex_ch_next
                 ora     b
                 ret
 
+		;; The algorithm used here is is (almost) the "X ABC" algorithm described on:
+		;; https://www.electro-tech-online.com/threads/ultra-fast-pseudorandom-number-generator-for-8-bit.124249/
+		;; "Beter goed gestolen dan slecht bedacht" 
+		;; The 4 bytes of state are stored starting at rnddat in the order "X C A B". 
+xcab_rnd	lxi	h,rnddat
+		inr	m 	; X++
+		mov	a,m	; X,
+		inx	h       ;
+		xra	m       ; ^ C,
+                inx	h	;
+		xra	m	; ^ A,
+		mov	m,a	; -> A
+		inx	h
+		add	m	; + B,
+		mov	m,a	; -> B
+		rar		; >>1 (close enough here, it's not crypto, besides, 'stc cmc' _removes_ randomness right?) 
+		dcx	h
+		xra	m	; ^ A,
+		dcx	h
+		add	m	; + C
+		mov	m,a	; -> C
+		ret
+		
 		;;;;; Display subroutines ;;;;;
 				
 		;;;; Clear the screen.
