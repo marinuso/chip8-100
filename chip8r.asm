@@ -202,7 +202,8 @@ font_load_loop	ldax	d 		; Get current input byte
 		lxi	d,altlcd	; copy it into memory starting at ALTLCD
 		lxi	b,640		; max. 640 bytes
 		call	memcpy
-		sta	quit		; Set 'quit' to 0. (memcpy ends with a=0)
+		cma
+		sta	funkey		; Set the function key row to FF.
 		
 		;;;; Initialize the random number generator
 		lxi	h,timer 	; There are, at this location, subsequently in memory:
@@ -257,8 +258,7 @@ isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		mvi	a,7Fh			; Check the keyboard for function keys
 		out	0B9h
 		in	0E8h
-		cma				; Is FF if no function key pressed, so 00 will be stored if that's the case.
-		sta	quit		
+		sta	funkey		
 		inr	l			; Look at delay timer
 		xra	a
 		ora	m		

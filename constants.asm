@@ -67,6 +67,6 @@ reg_DT		equ	0ff61h	; Delay timer
 reg_ST		equ	0ff62h	; Sound timer
 stackptr	equ	0ff63h	; Stack pointer (8-bit, points into first page of VM memory)
 reg_I		equ	0ff64h	; Memory pointer
-quit		equ	0ff66h	; Will be set to nonzero by the ISR if a function key is pressed.
+funkey		equ	0ff66h	; Will be set to the function key row by the ISR
 rnddat		equ	0ff67h	; This will hold 4 bytes of state for the random number generator
 

@@ -42,7 +42,7 @@ load_jptbl	ldax	d		; Get location of next byte in jump table
 cycle		mov	h,d
 		mov	l,e
 		shld	0ff48h		; Store IP in memory (for debugging)
-		call	check_quit	; Stop if the user wants to
+		call	check_funkey	; Stop if the user wants to
 		lxi	h,cycle		; Push the address onto the stack, so the opcode 
 		push	h		; routine can RET
 		
@@ -290,11 +290,13 @@ op_C		lxi	h,rnddat
 ;;;;; Subroutines ;;;;;
 
 		;;;; Check if a function key is pressed (ISR puts this in variable)
-		; If so, clear keyboard buffer and quit. 
-check_quit	lda	quit
-		ana	a
-		rz
-		xra	a
+check_funkey	lda	funkey
+		inr	a
+		rz			; No key pressed
+		cpi	(7fh + 1)	; F8 = quit
+		jz	f8_quit
+		ret
+f8_quit		xra	a
 		sta	type_buf_len
 		rst	0
 		
@@ -346,7 +348,7 @@ keyscan		push	h
 		ret
 		
 		;;;; Wait until no key is held down.
-wait_no_key	call	check_quit	; Respond to F8 in this loop. 
+wait_no_key	call	check_funkey	; Respond to F8 in this loop. 
 		lda	keydown		; Wait until FF90h is not 2 (key released)
 		cpi	2
 		jz	wait_no_key
@@ -396,7 +398,7 @@ fnf_ld_Vx_DT	lda	reg_DT
 
 		;; Wait for key press, store key press in Vx
 fnf_ld_Vx_K	call	wait_no_key	; Wait until keyboard is free. 
-		call	check_quit	; Respond to F8 in this loop so the user can always quit
+		call	check_funkey	; Respond to F8 in this loop so the user can always quit
 		mov	a,m		; Use current Vx as "counter" 
 		inr	a		; Select next key
 		ani	0fh
