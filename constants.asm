@@ -5,7 +5,7 @@ shlx		equ 	0d9h	; (DE) = HL
 dsub		equ	8h	; HL -= BC
 
 ;; Constants
-vm_speed	equ	768	; Reduced speed is 768 Hz. 
+vm_speed	equ	512	; Reduced speed is 768 Hz. 
 maxram 		equ	0f5f4h	; Maximum memory
 origin		equ	8000h	
 relocate	equ	7676h	; Relocation marker
@@ -47,10 +47,12 @@ v_no_relocate	equ	0f68bh
 v_relocate_loop	equ	0f68dh
 rlc_end_addr	equ	0f68fh
 
-;; Jumps to relocated subroutines
-r_cls		equ	0f691h	; a 'jmp cls' is written here
-r_drawsprite	equ	0f694h	; a 'jmp drawsprite' is written here
-r_xcab_rnd	equ	0f697h	; a 'jmp xcab_rnd' is written here
+;; Jumps to relocated subroutines (spaced 5 bytes apart so the relocation NOPs aren't a problem)
+;; (The relocator is done by now so we can reuse its memory locations)
+rlc_jptbl_start	equ	0f685h	; This is the start address for the jump table. 
+r_cls		equ	0f685h	; a 'jmp cls' is written here
+r_drawsprite	equ	0f68ah	; a 'jmp drawsprite' is written here
+r_xcab_rnd	equ	0f68fh	; a 'jmp xcab_rnd' is written here
 
 ;; Jump table
 jptbl		equ	0f700h	; 128-byte jump table for 8 and F. 

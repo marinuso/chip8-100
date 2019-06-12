@@ -160,32 +160,13 @@ font_load_loop	ldax	d 		; Get current input byte
 		dw	relocate
 		jnz	font_load_loop	; If not, next byte
 
+		;;;; Copy the relocated jump table 
 		;;;; Calculate and store 'jmp cls' in a known address
 		dw	relocate
-		lxi	d,cls
-		lxi	h,r_cls
-		mvi	m,0c3h		; jmp
-		inx	h
-		xchg
-		db	shlx
-		
-		;;;; Calculate and store 'jmp drawsprite' in a known address
-		dw	relocate
-		lxi	d,drawsprite
-		lxi	h,r_drawsprite
-		mvi	m,0c3h		; jmp
-		inx	h
-		xchg
-		db	shlx
-		
-		;;;; Calculate and store 'jmp xcab_rnd' in a known address
-		dw	relocate
-		lxi	d,xcab_rnd
-		lxi	h,r_xcab_rnd
-		mvi	m,0c3h		; jmp
-		inx	h
-		xchg
-		db	shlx
+		lxi	h,rlc_jptbl
+		lxi	d,rlc_jptbl_start
+		lxi	b,rlc_jptbl_sz
+		call	memcpy
 		
 		;;;; Program the timer to generate a square wave, and set it to output to
 		;;;; the speaker, but leave the speaker off.
@@ -232,6 +213,19 @@ font_load_loop	ldax	d 		; Get current input byte
 		jmp	altlcd
 		
 		;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+		;;;; Relocation jump table
+		;;;; The relocator adjusts these addresses, and afterwards this block of memory
+		;;;; is copied into a known location. This allows the high memory part of the
+		;;;; program to call into the relocatable area. 
+		dw	relocate
+rlc_jptbl	jmp	cls
+		dw	relocate
+		jmp	drawsprite
+		dw	relocate
+		jmp	xcab_rnd
+rlc_jptbl_sz	equ	$ - rlc_jptbl
+		
+		;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 		;;;; Subroutines in relocatable area
 		
 		;;;; Interrupt routine (will end up in HIMEM protected area while the program runs) 
@@ -260,8 +254,8 @@ isrdone		pop	psw			; Restore all registers
 		dw	relocate
 isr_run		lxi	h,isrdone		; so we can safely 'ret' in the rest of the routine
 		push	h
-		lxi	h,slow_delay		; Give the main thread 2000 opcodes to run per 256hz cycle in slow mode
-		mvi	m,(vm_speed / 256)	; (run VM processor at ~ "vm_speed" Hz) 
+		lxi	h,slow_delay		; Run the VM processor at ~ "vm_speed" Hz in slow mode.
+		mvi	m,(vm_speed / 256)	
 		mvi	l,low counter		; VM countdown (the rest only needs to run only every 4 cycles, 256/4=64 hz)
 		dcr	m
 		rnz		
