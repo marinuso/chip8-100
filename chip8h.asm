@@ -118,12 +118,12 @@ op_1		mov	a,b		; Zero out high nybble of high byte
 		ret
 
 ;; 5XY0: SE Vx, Vy - Skip next instruction if Vx = Vy
-op_5		call	reg_C		; Get Vy
+op_5		call	r_reg_C		; Get Vy
 		mov	c,a		; Store where KK would be
 		; Fall through into 3XKK
 		
 ;; 3XKK: SE Vx, KK - Skip next instruction if Vx = KK
-op_3		call	reg_B		; Get Vx
+op_3		call	r_reg_B		; Get Vx
 		cmp	c		; Compare to KK
 		rnz			; If not equal, do nothing
 		inx	d		; If equal, advance PC
@@ -131,25 +131,25 @@ op_3		call	reg_B		; Get Vx
 		ret 
 
 ;; 9XY0: SNE Vx, Vy - Skip next instruction if Vx = Vy
-op_9		call	reg_C		; Get Vy
+op_9		call	r_reg_C		; Get Vy
 		mov	c,a		; Store where KK would be
 		; Fall through in to 4XKK
 		
 ;; 4XKK: SNE Vx, KK - Skip next instruction if Vx != KK
-op_4		call	reg_B		; Get Vx
+op_4		call	r_reg_B		; Get Vx
 		cmp	c		; Compare to KK
 		rz			; If equal, do nothing
 		inx	d		; If not equal, advance PC 
 		inx	d
 		ret		
 ;; 6XKK: LD Vx, KK - Set Vx = KK
-op_6		call	reg_B		; Get Vx
+op_6		call	r_reg_B		; Get Vx
 		mov	m,c 		; Store KK
 		ret
 
 
 ;; 7XKK: ADD Vx, KK - Set Vx = Vx + KK
-op_7		call	reg_B		; Get Vx
+op_7		call	r_reg_B		; Get Vx
 		add	c		; Add KK
 		mov	m,a		; Store it back
 		ret		
@@ -165,9 +165,9 @@ op_7		call	reg_B		; Get Vx
 ;;         F = 7 = Vy-Vx   (SUBN Vx, Vy)
 ;;         F = E = Vx>>1   (SHL Vx) 	
 op_8		push	d		; Store the PC
-		call	reg_C		; Retrieve the resgister values
+		call	r_reg_C		; Retrieve the resgister values
 		mov	e,a
-		call	reg_B
+		call	r_reg_B
 		mov	d,a
 		
 		mov	a,c		; Get F from the instruction 
@@ -182,7 +182,7 @@ op_8		push	d		; Store the PC
 		mov	a,d		; Preload Vx into the accumulator
 		pchl
 op_8_ret	mov	d,a		; Store Vx back 
-		call	reg_B
+		call	r_reg_B
 		mov	m,d
 		pop	d
 		ret
@@ -206,20 +206,20 @@ op_B		lxi	h,reg_V		; Set HL = V0
 
 ;; DXYN: DRW Vx, Vy, N - At coords (Vx, Vy), draw N-byte sprite from memory at I 
 op_D		push	d		; We need it for the coordinates
-		call	reg_C		; Y coordinate register 
+		call	r_reg_C		; Y coordinate register 
 		mov	e,a
-		call	reg_B		; X coordinate register 
+		call	r_reg_B		; X coordinate register 
 		mov	d,a
 		mov	a,c		; Number of bytes
 		ani	0fh
 		mov	b,a
-		call	hl_I
+		call	r_hl_I
 		call	r_drawsprite
 pop_d_ret	pop	d
 		ret 
 	
 ;; Ex9E: SKP Vx; ExA1: SNKP Vx: skip if key Vx is (not) pressed	
-op_E		call	reg_B		; Retrieve Vx
+op_E		call	r_reg_B		; Retrieve Vx
 		call	keyscan
 		push	psw
 		
@@ -262,13 +262,13 @@ op_F		push	d
 		mvi	h,high fn8_ld
 		push	h
 		; Retrieve register and continue into the function
-		jmp	reg_B
+		jmp	r_reg_B
 	
 ;; Cxkk = generate a random number, AND it with KK, and store it in Vx 	
 op_C		call	r_xcab_rnd
 		ana	c		; AND the result with KK
 		mov	c,a
-		call	reg_B
+		call	r_reg_B
 		mov	m,c
 		ret
 		
@@ -295,28 +295,6 @@ wait_loop	inr	a		; Wait until the key is let go
 f8_quit		xra	a
 		sta	type_buf_len
 		rst	0
-		
-		;;;; Get register in upper C
-reg_C		mov	a,c
-		rrc
-		rrc
-		rrc
-		rrc
-		db	26h		; mvi h,_ : to skip mov a,b below
-		;;;; Get register in lower B
-reg_B		mov 	a,b
-		ani	0fh
-		ori	low reg_V
-		mov	l,a
-		mvi	h,high reg_V
-		mov	a,m
-		ret 
-		;;;; Set HL = [I]
-hl_I		lda	vm_mem_start + 1
-		lhld	reg_I
-		add	h
-		mov	h,a
-		ret
 		
 		;;;; Scan the keyboard
 		; Input: A = hex value of key to test
@@ -445,7 +423,7 @@ fnf_ld_F_Vx	mov	l,a
 		;; reserved for the interpreter.)
 fnf_ld_B_Vx	lxi	d,640ah		; D=100 (64h), E=10 (Ah)
 		mov	b,a
-		call	hl_I
+		call	r_hl_I
 		mov	a,b
 		mvi	b,-1
 		mov	m,b
@@ -473,7 +451,7 @@ fnf_ld_Vx_I	xra	a		; ld_Vx_I: use a NOP
 		mov	c,a
 		mvi	b,0
 		lxi	d,reg_V		; DE = *V0
-		call	hl_I		; HL = [I]
+		call	r_hl_I		; HL = [I]
 ldivx_nop_xchg	xchg			; with XCHG, copy Vx->[I]; with NOP, [I]->Vx; this is rewritten
 		jmp	memcpy		; copy from HL to DE for BC byte
 		
@@ -486,7 +464,24 @@ op_tbl		db	low op_0, low op_1, low op_2, low op_3
 		db	low op_4, low op_5, low op_6, low op_7
 		db	low op_8, low op_9, low op_A, low op_B
 		db	low op_C, low op_D, low op_E, low op_F
-			
+		
+		;;;; Keyboard mapping 
+		; 5 6 7 8   ==  1 2 3 C
+		; T Y U I   ==  4 5 6 D
+		; G H J K   ==  7 8 9 E 
+		; B N M ,   ==  A 0 B F 
+
+		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
+keyin		db	0feh, 0efh, 0efh, 0efh
+		db	0fbh, 0fbh, 0fbh, 0fdh
+		db	0fdh, 0fdh, 0feh, 0feh
+		db	0efh, 0fbh, 0fdh, 0f7h
+		; Chip-8 nybble -> keyboard output lines 
+keyout		db	0dfh, 0efh, 0dfh, 0bfh
+		db	0efh, 0dfh, 0bfh, 0efh
+		db	0dfh, 0bfh, 0efh, 0bfh
+		db	07fh, 07fh, 07fh, 0dfh
+		
 		;;;; Function table for 8xyf and Fxff
 		; Fxff all has its functions increased by 1 so they don't conflict.
 		; This table may (probably does) cross a page boundary
@@ -513,20 +508,5 @@ func_tbl	db	00h,low fn8_ld
 		db	1 + 65h, low fnf_ld_Vx_I
 ftblsz		equ	($ - func_tbl) >> 1
 
-		;;;; Keyboard mapping 
-		; 5 6 7 8   ==  1 2 3 C
-		; T Y U I   ==  4 5 6 D
-		; G H J K   ==  7 8 9 E 
-		; B N M ,   ==  A 0 B F 
 
-		; Chip-8 nybble -> keyboard input lines. TABLE MUST NOT CROSS PAGE BOUNDARY
-keyin		db	0feh, 0efh, 0efh, 0efh
-		db	0fbh, 0fbh, 0fbh, 0fdh
-		db	0fdh, 0fdh, 0feh, 0feh
-		db	0efh, 0fbh, 0fdh, 0f7h
-		; Chip-8 nybble -> keyboard output lines 
-keyout		db	0dfh, 0efh, 0dfh, 0bfh
-		db	0efh, 0dfh, 0bfh, 0efh
-		db	0dfh, 0bfh, 0efh, 0bfh
-		db	07fh, 07fh, 07fh, 0dfh
 		

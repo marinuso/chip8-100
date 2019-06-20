@@ -223,6 +223,12 @@ rlc_jptbl	jmp	cls
 		jmp	drawsprite
 		dw	relocate
 		jmp	xcab_rnd
+		dw	relocate
+		jmp	reg_C
+		dw	relocate
+		jmp	reg_B
+		dw	relocate
+		jmp	hl_I
 rlc_jptbl_sz	equ	$ - rlc_jptbl
 		
 		;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -281,6 +287,29 @@ isr_snd_off	in	0bah			; If sound timer 0, turn off the speaker
 		ori	4
 		out 	0bah
 		ret
+		
+		;;;; Get register in upper C
+reg_C		mov	a,c
+		rrc
+		rrc
+		rrc
+		rrc
+		db	26h		; mvi h,_ : to skip mov a,b below
+		;;;; Get register in lower B
+reg_B		mov 	a,b
+		ani	0fh
+		ori	low reg_V
+		mov	l,a
+		mvi	h,high reg_V
+		mov	a,m
+		ret 
+		;;;; Set HL = [I]
+hl_I		lda	vm_mem_start + 1
+		lhld	reg_I
+		add	h
+		mov	h,a
+		ret
+		
 		
 hex_char        ;; Get hexadecimal character under the HL pointer.
                 ;; A will be set to the hex value. Carry flag will be set if invalid.
@@ -562,6 +591,7 @@ advance		;; increment the control byte twice to tell the driver to look at the n
 		mov	b,a
 		dw	relocate
 		jmp	check_bounds	; and only _then_ draw the next pixel. 
+		
 		
 font            ;; Packed font data. 
 		;; Each group of five nybbles is a hexdigit, in VM memory they should occupy five bytes each

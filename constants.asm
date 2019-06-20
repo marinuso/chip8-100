@@ -53,6 +53,9 @@ rlc_jptbl_start	equ	0f685h	; This is the start address for the jump table.
 r_cls		equ	0f685h	; a 'jmp cls' is written here
 r_drawsprite	equ	0f68ah	; a 'jmp drawsprite' is written here
 r_xcab_rnd	equ	0f68fh	; a 'jmp xcab_rnd' is written here
+r_reg_C		equ	0f694h  ; usw. usw. 
+r_reg_B		equ	0f699h
+r_hl_I		equ	0f69eh
 
 ;; Jump table
 jptbl		equ	0f700h	; 128-byte jump table for 8 and F. 
