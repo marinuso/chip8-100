@@ -72,4 +72,5 @@ stackptr	equ	0ff63h	; Stack pointer (8-bit, points into first page of VM memory)
 reg_I		equ	0ff64h	; Memory pointer
 funkey		equ	0ff66h	; Will be set to the function key row by the ISR
 rnddat		equ	0ff67h	; This will hold 4 bytes of state for the random number generator
+quirks		equ	0ff6bh  ; Quirks byte
 
