@@ -161,9 +161,9 @@ op_7		call	r_reg_B		; Get Vx
 ;;         F = 3 = Vx^Vy   (XOR Vx, Vy)
 ;;         F = 4 = Vx+Vy   (ADD Vx, Vy)
 ;;         F = 5 = Vx-Vy   (SUB Vx, Vy)
-;;         F = 6 = Vx<<1   (SHR Vx) 
+;;         F = 6 = Vy<<1   (SHR Vx, Vy) 
 ;;         F = 7 = Vy-Vx   (SUBN Vx, Vy)
-;;         F = E = Vx>>1   (SHL Vx) 	
+;;         F = E = Vy>>1   (SHL Vx, Vy) 	
 op_8		push	d		; Store the PC
 		call	r_reg_C		; Retrieve the resgister values
 		mov	e,a
@@ -398,16 +398,6 @@ fnf_ld_ST_Vx	sta	reg_ST		; Store sound timer
 		out	0bah 
 		ei
 		ret
-
-fnf_add_I_Vx	lhld	reg_I		; I register
-		add	l
-		mov	l,a		; Add Vx
-		mvi	a,0
-		adc	h		; Increment high byte if necessary
-		ani	0fh		; Keep I within bounds of memory
-		mov	h,a
-store_reg_I	shld	reg_I
-		ret
 		
 		;; Set I = font[Vx] 
 		;; which is 0100 + Vx * 5
@@ -447,17 +437,29 @@ fnf_ld_I_Vx	mvi	a,0ebh		; ld_I_Vx; use an XCHG
 		db	6		; 6 = mvi b,_ = skip the 'xra a'. 
 fnf_ld_Vx_I	xra	a		; ld_Vx_I: use a NOP
 		sta	ldivx_nop_xchg
-		mov	a,l		; BC = x (of Vx)
+		mov	a,l		; BC = x (of Vx) ; NOTE: at this point HL points at Vx. Vx is at FF5Xh thus L & 15 = the X.
 		ani	0fh
 		inr	a		; 0..x inclusive 
+		push	psw
 		mov	c,a
 		mvi	b,0
 		lxi	d,reg_V		; DE = *V0
 		call	r_hl_I		; HL = [I]
 ldivx_nop_xchg	xchg			; with XCHG, copy Vx->[I]; with NOP, [I]->Vx; this is rewritten
-		jmp	memcpy		; copy from HL to DE for BC byte
+		call	memcpy		; copy from HL to DE for BC byte
+		pop	psw		; Restore the increment in A so we can reuse it for postincrement of I
+postinc_nop	nop			; a RET can be written here to stop the postincrement
+		; Fall through into add_I_Vx with A set to do the postincrement
 		
-
+fnf_add_I_Vx	lhld	reg_I		; I register
+		add	l
+		mov	l,a		; Add Vx
+		mvi	a,0
+		adc	h		; Increment high byte if necessary
+		ani	0fh		; Keep I within bounds of memory
+		mov	h,a
+store_reg_I	shld	reg_I
+		ret
 
 ;;;;;; Control data ;;;;;;
 
