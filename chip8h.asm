@@ -361,9 +361,11 @@ fn8_updateVF 	mov	d,a
 		mov	a,d
 fn_ret		ret
 
-fn8_shl		ral
-		db	16h		; mvi d,_ to skip the 'rar' below
-fn8_shr		rar
+fn8_shl		mov	a,e		; for Vx = Vy << 1; can be NOP'ed out for the other behaviour
+		ral
+		db	21h		; lxi h,_ to skip the 'mov - rar' below
+fn8_shr		mov	a,e		; for Vx = Vy >> 1 as above 
+		rar
 		jmp	fn8_updateVF
 		
 ;; FnF: input: HL points at Vx register, A = contents of Vx register
