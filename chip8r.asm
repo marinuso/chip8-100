@@ -183,11 +183,33 @@ font_load_loop	ldax	d 		; Get current input byte
 		out	0bah
 		ei
 		
+		;;;; Check the quirks byte to see if sprites should wrap, and rewrite the routine accordingly
+		dw	relocate
+		lxi	h,allow_wrap_1
+		lxi	d,(allow_wrap_2 - allow_wrap_1)
+
+		lda	quirks
+		ral
+		dw	relocate
+		jnc	no_wrap
+		;; We should wrap: allow_wrap_2 must have a NOP and allow_wrap_1 must have 'mov e,a'
+		mvi	m,05fh	;mov e,a
+		dad	d
+		mvi	m,0
+		dw	relocate
+		jmp	copy_high
+		;; No wrap: allow_wrap_2 must have RET and allow_wrap_1 most have RNZ
+no_wrap		mvi	m,0c0h	;rnz
+		dad	d
+		mvi	m,0c9h  ;ret
+		
+
+		
 		;;;; Copy the code that's supposed to run from ALTLCD/LCD into that area
 		; Some of it needs to be in a certain page for the jump tables to work,
 		; and this is a lot easier than calculating jump tables on the fly,and also
 		; doesn't require the binary itself to be loaded at a certain address.
-		dw	relocate
+copy_high	dw	relocate
 		lxi	h,vm_code	; the code is at the very end of the binary
 		lxi	d,altlcd	; copy it into memory starting at ALTLCD
 		lxi	b,640		; max. 640 bytes
@@ -460,7 +482,7 @@ drawbyte	;; check if E is within bounds
 		mvi	a,31
 		ana	e
 		cmp	e
-		rnz
+allow_wrap_1	rnz			; This is rewritten to be "mov e,a" if pixel wrapping is turned on
 
 		push	h		; we will need it later
 		lxi	b,1980h		; B = driver width in Chip-8 coords, C = driver selector.
@@ -532,7 +554,18 @@ check_bounds	; If we're out of bounds, stop.
 		mov	a,b
 		ani	00111111b	; are we about to draw on pixel 28? (50 + 50 + 28 = 128)	
 		xri	28	
-		rz			; then stop, we shouldn't draw "offscreen" .
+		dw	relocate
+		jnz	draw_bit	
+		
+allow_wrap_2	ret			; a NOP is written here if wrapping is turned on 
+		mov	a,c		; Select the driver that's 2 bits to the right of the current one
+		rrc
+		rrc
+		mov	c,a
+		mov	a,b
+		ani	11000000b	; And start at the first pixel in it (but keep the bank) 
+		mov	b,a 
+		
 		
 draw_bit	xra 	a		; mov a,l while setting flags
 		ora	l
